@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Hotspot - Pindai QR Code</title>
+    <!-- Memuat Pustaka HTML5 QR Code Scanner -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #E8EDF4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Card Container */
+        .card {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Top Icon */
+        .icon-circle {
+            width: 70px;
+            height: 70px;
+            background-color: #F0F4FF;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            color: #5B58F2;
+        }
+
+        .icon-circle svg {
+            width: 32px;
+            height: 32px;
+            stroke-width: 2;
+        }
+
+        /* Text Content */
+        h2 {
+            color: #111827;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        p {
+            color: #6B7280;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 30px;
+            padding: 0 10px;
+        }
+
+        /* Pill Button */
+        .btn-request {
+            background-color: #5B58F2;
+            color: #ffffff;
+            border: none;
+            width: 100%;
+            padding: 14px 24px;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .btn-request:hover {
+            background-color: #4f4ce3;
+        }
+
+        .btn-request:active {
+            transform: scale(0.98);
+        }
+
+        /* Scanner Area (Hidden by default) */
+        #scanner-container {
+            display: none;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #reader {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px dashed #5B58F2;
+            margin-bottom: 15px;
+        }
+        
+        #reader video {
+            border-radius: 12px;
+        }
+
+        .scan-status {
+            font-size: 14px;
+            color: #5B58F2;
+            font-weight: 600;
+            margin-top: 10px;
+            height: 20px;
+        }
+
+        /* Footer Link */
+        .footer {
+            margin-top: 30px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer a {
+            color: #5B58F2;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: opacity 0.2s;
+        }
+
+        .footer a:hover {
+            opacity: 0.8;
+        }
+
+        .footer svg {
+            width: 18px;
+            height: 18px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <!-- Konten Sebelum Scan -->
+        <div id="pre-scan-content" style="display: flex; flex-direction: column; align-items: center;">
+            <div class="icon-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </div>
+            
+            <h2>Pindai QR Code</h2>
+            <p>Izinkan akses kamera perangkat Anda untuk mulai memindai voucher atau link.</p>
+            
+            <button class="btn-request" onclick="startScanner()">Request Camera Permissions</button>
+        </div>
+
+        <!-- Konten Scanner (Aktif setelah tombol diklik) -->
+        <div id="scanner-container">
+            <h2 style="font-size: 18px; margin-bottom: 20px;">Arahkan ke QR Code</h2>
+            <div id="reader"></div>
+            <div id="scan-status" class="scan-status">Mencari kode QR...</div>
+        </div>
+
+        <!-- Form tersembunyi untuk auto-login MikroTik -->
+        <form id="login-form" action="$(link-login)" method="POST" style="display: none;">
+            <input type="hidden" name="dst" value="$(link-orig)">
+            <input type="hidden" name="popup" value="true">
+            <input type="hidden" name="username" id="username-input">
+            <input type="hidden" name="password" id="password-input">
+        </form>
+    </div>
+
+    <!-- Footer Copyright -->
+    <div class="footer">
+        <a href="https://linktr.ee/layercub" target="_blank">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            Escape
+        </a>
+    </div>
+
+    <script>
+        let html5QrCode;
+
+        function startScanner() {
+            // Sembunyikan konten awal
+            document.getElementById('pre-scan-content').style.display = 'none';
+            // Tampilkan container scanner
+            document.getElementById('scanner-container').style.display = 'flex';
+
+            // Inisialisasi Scanner
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { 
+                fps: 10, 
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                onScanSuccess, 
+                onScanFailure
+            ).catch((err) => {
+                // Jika akses kamera ditolak atau gagal
+                document.getElementById('scan-status').innerText = "Gagal mengakses kamera.";
+                document.getElementById('scan-status').style.color = "#EF4444"; // Merah
+                alert("Harap izinkan akses kamera di browser Anda untuk melanjutkan.");
+                
+                // Kembalikan ke tampilan awal
+                document.getElementById('scanner-container').style.display = 'none';
+                document.getElementById('pre-scan-content').style.display = 'flex';
+            });
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // Update status teks
+            const statusEl = document.getElementById('scan-status');
+            statusEl.innerText = "Berhasil! Sedang login...";
+            statusEl.style.color = "#10B981"; // Hijau
+
+            // Hentikan scanner agar tidak scan berkali-kali
+            html5QrCode.stop().then(() => {
+                // Isi form input username dan password dengan hasil scan
+                // Asumsi: voucher mikrotik menggunakan parameter username (dan password sama)
+                document.getElementById('username-input').value = decodedText;
+                document.getElementById('password-input').value = decodedText;
+                
+                // Submit form otomatis ke router MikroTik
+                setTimeout(() => {
+                    document.getElementById('login-form').submit();
+                }, 500);
+            }).catch((err) => {
+                console.error("Gagal menghentikan scanner", err);
+                // Jika gagal stop, tetap paksa submit
+                document.getElementById('username-input').value = decodedText;
+                document.getElementById('login-form').submit();
+            });
+        }
+
+        function onScanFailure(error) {
+            // Diabaikan, terus memindai frame demi frame mencari QR code
+        }
+    </script>
+</body>
+</html>
